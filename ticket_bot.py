@@ -3,7 +3,7 @@ import telegram
 from telegram import Update
 from telegram.ext import Application, MessageHandler, filters, ContextTypes
 
-TOKEN = "8148731949:AAAb6xhfCFLtKA4emZJxxs2oS1zB3b0kkQ"
+TOKEN = "8148731949:AAFTYt8gMYcWluUVBFb41d2V_4tAH-HiFBo"
 GROUP_ID = -1002971903995
 
 def get_name(user):
