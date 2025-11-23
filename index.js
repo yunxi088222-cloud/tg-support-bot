@@ -7,7 +7,8 @@ app.use(express.json());
 // ========= 配置（从环境变量读取） =========
 const TOKEN = process.env.BOT_TOKEN;
 const WEBHOOK_URL = process.env.WEBHOOK_URL;
-const SUPPORT_CHAT_ID = process.env.SUPPORT_CHAT_ID; // 客服“论坛群”ID，例如 -1001234567890
+// 客服“论坛群”ID：这里可以用 @群用户名，例如 @chaojjjq168
+const SUPPORT_CHAT_ID = process.env.SUPPORT_CHAT_ID;
 const API = `https://api.telegram.org/bot${TOKEN}`;
 // =====================================
 
@@ -15,8 +16,8 @@ const API = `https://api.telegram.org/bot${TOKEN}`;
 const customerToTopic = new Map(); // customerId -> topicId
 const topicToCustomer = new Map(); // topicId -> customerId
 
-if (!TOKEN || !WEBHOOK_URL) {
-  console.error("❗ 请配置 BOT_TOKEN 和 WEBHOOK_URL 环境变量");
+if (!TOKEN || !WEBHOOK_URL || !SUPPORT_CHAT_ID) {
+  console.error("❗ 请配置 BOT_TOKEN / WEBHOOK_URL / SUPPORT_CHAT_ID 环境变量");
 }
 
 // 启动时设置 Webhook
@@ -42,15 +43,11 @@ function extractCustomerId(text) {
 }
 
 // 创建（或取得）某个客户对应的话题ID
-async function getOrCreateTopicForCustomer(customer, chatInfo) {
+async function getOrCreateTopicForCustomer(customer) {
   const customerId = customer.id;
 
   if (customerToTopic.has(customerId)) {
     return customerToTopic.get(customerId);
-  }
-
-  if (!SUPPORT_CHAT_ID) {
-    throw new Error("SUPPORT_CHAT_ID 未配置");
   }
 
   // 话题标题格式：客户 #ID (username: @xxx)
@@ -62,7 +59,7 @@ async function getOrCreateTopicForCustomer(customer, chatInfo) {
 
   console.log("🧵 为客户创建新话题：", title);
 
-  // 调用 createForumTopic 创建话题
+  // 用 SUPPORT_CHAT_ID（可以是 @群用户名）创建话题
   const res = await axios.post(`${API}/createForumTopic`, {
     chat_id: SUPPORT_CHAT_ID,
     name: title,
@@ -113,7 +110,7 @@ app.post("/", async (req, res) => {
     const customerId = customer.id;
 
     try {
-      const topicId = await getOrCreateTopicForCustomer(customer, chat);
+      const topicId = await getOrCreateTopicForCustomer(customer);
 
       const username = customer.username ? `@${customer.username}` : "无";
       const fullName =
@@ -155,7 +152,7 @@ app.post("/", async (req, res) => {
         });
       }
 
-      // 不给客户任何自动回复，由你在话题里处理
+      // 不给客户自动回复，由你在话题里处理
     } catch (e) {
       console.error("❗ 处理客户私聊失败：", e.response?.data || e.message);
     }
@@ -165,11 +162,6 @@ app.post("/", async (req, res) => {
 
   // ========== 情况 2：客服后台群里的消息（论坛模式） ==========
   if (chatType === "group" || chatType === "supergroup") {
-    // 只处理指定的客服群
-    if (SUPPORT_CHAT_ID && String(chat.id) !== String(SUPPORT_CHAT_ID)) {
-      return res.sendStatus(200);
-    }
-
     // 忽略机器人自己的消息
     if (from.is_bot) {
       return res.sendStatus(200);
