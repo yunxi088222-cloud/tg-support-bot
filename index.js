@@ -7,8 +7,8 @@ app.use(express.json());
 // ========= 配置 =========
 const TOKEN = process.env.BOT_TOKEN;
 const WEBHOOK_URL = process.env.WEBHOOK_URL;
-// ⭐⭐ 用群用户名！而不是群ID
-const SUPPORT_CHAT_USERNAME = process.env.SUPPORT_CHAT_ID;  // "@chaojijiqi168"
+// ⭐⭐ 这里直接写死你的群用户名
+const SUPPORT_CHAT_USERNAME = "@chaojijiqi168";
 
 const API = `https://api.telegram.org/bot${TOKEN}`;
 // ========================
@@ -108,3 +108,4 @@ app.post("/", async (req, res) => {
 app.listen(Number(process.env.PORT) || 3000, () =>
   console.log("Bot 已启动")
 );
+
