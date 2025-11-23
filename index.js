@@ -1,35 +1,43 @@
-const TelegramBot = require('node-telegram-bot-api');
-const token = process.env.BOT_TOKEN;
+import express from "express";
+import axios from "axios";
 
-const bot = new TelegramBot(token, { polling: true });
+const app = express();
+app.use(express.json());
 
-// 所有收到的消息都转发给你的客服管理员
-const ADMIN_ID = process.env.ADMIN_ID; // 你的 Telegram ID
+const TOKEN = process.env.BOT_TOKEN;
+const WEBHOOK_URL = process.env.WEBHOOK_URL;
+const API = `https://api.telegram.org/bot${TOKEN}`;
 
-// 用户 → 管理员
-bot.on('message', async (msg) => {
-    if (msg.chat.id == ADMIN_ID) return;
+// 设置 Webhook
+async function setWebhook() {
+  try {
+    const url = `${API}/setWebhook?url=${WEBHOOK_URL}`;
+    const res = await axios.get(url);
+    console.log("Webhook 已设置：", res.data);
+  } catch (e) {
+    console.error("Webhook 设置失败：", e.response?.data || e);
+  }
+}
 
-    const userId = msg.chat.id;
-    const text = msg.text;
+setWebhook();
 
-    await bot.sendMessage(ADMIN_ID, `来自用户 ${userId}：\n${text}`);
+// 处理消息
+app.post("/", async (req, res) => {
+  const message = req.body.message;
+
+  if (!message) return res.sendStatus(200);
+
+  const chatId = message.chat.id;
+  const text = message.text || "";
+
+  await axios.post(`${API}/sendMessage`, {
+    chat_id: chatId,
+    text: `你发送了：${text}`
+  });
+
+  res.sendStatus(200);
 });
 
-// 管理员 → 用户（格式：用户ID 空格 消息）
-bot.on('message', async (msg) => {
-    if (msg.chat.id != ADMIN_ID) return;
-
-    const text = msg.text;
-    const parts = text.split(" ");
-    
-    if (parts.length < 2) {
-        return bot.sendMessage(ADMIN_ID, "格式错误：\n用户ID 空格 回复内容");
-    }
-
-    const userId = parts[0];
-    const replyText = parts.slice(1).join(" ");
-
-    await bot.sendMessage(userId, replyText);
-    await bot.sendMessage(ADMIN_ID, "已发送 ✔️");
+app.listen(process.env.PORT || 3000, () => {
+  console.log("Bot 服务已启动");
 });
