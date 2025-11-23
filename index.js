@@ -7,7 +7,7 @@ app.use(express.json());
 // ========= 配置（从环境变量读取） =========
 const TOKEN = process.env.BOT_TOKEN;
 const WEBHOOK_URL = process.env.WEBHOOK_URL;
-// 客服“论坛群”ID：这里可以用 @群用户名，例如 @chaojjjq168
+// 客服“论坛群”ID：这里可以用 @群用户名，例如 @chaojijiqi168
 const SUPPORT_CHAT_ID = process.env.SUPPORT_CHAT_ID;
 const API = `https://api.telegram.org/bot${TOKEN}`;
 // =====================================
@@ -255,3 +255,4 @@ app.post("/", async (req, res) => {
 app.listen(Number(process.env.PORT) || 3000, () => {
   console.log("🚀 Bot 服务已启动，端口：", Number(process.env.PORT) || 3000);
 });
+
