@@ -74,64 +74,69 @@ app.post("/", async (req, res) => {
 
   const chatType = msg.chat.type;
 
-  // =============== 情况 1：客户私聊机器人 ===============
-  if (chatType === "private") {
-    const customer = msg.from;
-    const customerId = customer.id;
-// ------------------ 自动欢迎新用户（只发一次） ------------------
-if (!customerToTopic.has(customerId)) {
-  const botInfo = await axios.get(`${API}/getMe`);
-  const botName =
-    botInfo.data?.result?.username ||
-    botInfo.data?.result?.first_name ||
-    "mi asistente";
+ // =============== 情况 1：客户私聊机器人 ===============
+if (chatType === "private") {
+  const customer = msg.from;
+  const customerId = customer.id;
 
-  await axios.post(`${API}/sendMessage`, {
-    chat_id: customerId,
-    text: `¡Hola cariño! Soy ${botName} 🤖\nEstoy aquí para ayudarte, ¿en qué necesitas apoyo?`
-  });
-}
-    try {
-      const topicId = await getOrCreateTopic(customer);
+  try {
+    // ------------------ 自动欢迎新用户（只发一次） ------------------
+    if (!customerToTopic.has(customerId)) {
+      const botInfo = await axios.get(`${API}/getMe`);
+      const botName =
+        botInfo.data?.result?.username ||
+        botInfo.data?.result?.first_name ||
+        "mi asistente";
 
-      // 内容描述
-      let content = msg.text || "";
-      if (!content) {
-        if (msg.photo) content = "[图片]";
-        else if (msg.document) content = "[文件]";
-        else content = "[非文本消息]";
-      }
-
-      const username = customer.username ? `@${customer.username}` : "无";
-      const fullName = `${customer.first_name || ""} ${customer.last_name || ""}`.trim() || "无";
-
-      const header = 
-        `📩 客户来消息\n` +
-        `客户ID: ${customerId}\n用户名: ${username}\n昵称: ${fullName}\n`;
-
-      // 发到话题
       await axios.post(`${API}/sendMessage`, {
-        chat_id: SUPPORT_CHAT_ID,
-        message_thread_id: topicId,
-        text: `${header}内容：\n${content}`
+        chat_id: customerId,
+        text: `¡Hola cariño! Soy ${botName} 🤖\nEstoy aquí para ayudarte, ¿en qué necesitas apoyo?`
       });
-
-      // 有图片则继续发
-      if (msg.photo) {
-        const fileId = msg.photo[msg.photo.length - 1].file_id;
-        await axios.post(`${API}/sendPhoto`, {
-          chat_id: SUPPORT_CHAT_ID,
-          message_thread_id: topicId,
-          photo: fileId,
-          caption: `来自客户（ID ${customerId}）的图片`
-        });
-      }
-    } catch (e) {
-      console.error("处理客户消息失败：", e.response?.data || e.message);
     }
 
-    return res.sendStatus(200);
+    // ------------------ 创建或获取话题 ------------------
+    const topicId = await getOrCreateTopic(customer);
+
+    // ------------------ 构建内容 ------------------
+    let content = msg.text || "";
+    if (!content) {
+      if (msg.photo) content = "[Imagen]";
+      else if (msg.document) content = "[Documento]";
+      else content = "[Mensaje no textual]";
+    }
+
+    const username = customer.username ? `@${customer.username}` : "no";
+    const fullName =
+      `${customer.first_name || ""} ${customer.last_name || ""}`.trim() || "no";
+
+    const header =
+      `📩 Mensaje del cliente\n` +
+      `ID: ${customerId}\nUsuario: ${username}\nNombre: ${fullName}\n`;
+
+    // ------------------ 发到话题 ------------------
+    await axios.post(`${API}/sendMessage`, {
+      chat_id: SUPPORT_CHAT_ID,
+      message_thread_id: topicId,
+      text: `${header}Contenido:\n${content}`
+    });
+
+    // ------------------ 图片处理 ------------------
+    if (msg.photo) {
+      const fileId = msg.photo[msg.photo.length - 1].file_id;
+      await axios.post(`${API}/sendPhoto`, {
+        chat_id: SUPPORT_CHAT_ID,
+        message_thread_id: topicId,
+        photo: fileId,
+        caption: `Imagen enviada por el cliente (ID ${customerId})`
+      });
+    }
+
+  } catch (e) {
+    console.error("处理客户消息失败：", e.response?.data || e.message);
   }
+
+  return res.sendStatus(200);
+}
 
   // =============== 情况 2：客服在群里回复 ===============
   if (chatType === "supergroup") {
