@@ -78,14 +78,17 @@ app.post("/", async (req, res) => {
   if (chatType === "private") {
     const customer = msg.from;
     const customerId = customer.id;
-// ------------------ 自动欢迎新用户 ------------------
-if (!customerToTopic.has(msg.from.id)) {
+// ------------------ 自动欢迎新用户（只发一次） ------------------
+if (!customerToTopic.has(customerId)) {
   const botInfo = await axios.get(`${API}/getMe`);
-  const botName = botInfo.data.result.username || "机器人";
+  const botName =
+    botInfo.data?.result?.username ||
+    botInfo.data?.result?.first_name ||
+    "mi asistente";
 
   await axios.post(`${API}/sendMessage`, {
-    chat_id: msg.chat.id,
-    text: `欢迎光临，我是 ${botName} 🤖\n请问有什么可以帮您？`
+    chat_id: customerId,
+    text: `¡Hola cariño! Soy ${botName} 🤖\nEstoy aquí para ayudarte, ¿en qué necesitas apoyo?`
   });
 }
     try {
