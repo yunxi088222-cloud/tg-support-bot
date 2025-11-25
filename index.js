@@ -78,7 +78,16 @@ app.post("/", async (req, res) => {
   if (chatType === "private") {
     const customer = msg.from;
     const customerId = customer.id;
+// ------------------ 自动欢迎新用户 ------------------
+if (!customerToTopic.has(msg.from.id)) {
+  const botInfo = await axios.get(`${API}/getMe`);
+  const botName = botInfo.data.result.username || "机器人";
 
+  await axios.post(`${API}/sendMessage`, {
+    chat_id: msg.chat.id,
+    text: `欢迎光临，我是 ${botName} 🤖\n请问有什么可以帮您？`
+  });
+}
     try {
       const topicId = await getOrCreateTopic(customer);
 
